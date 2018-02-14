@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import warnings
+from django import VERSION
 from django.db.models import fields, ImageField
 from django.db.models.fields import related
 from django.utils.six import with_metaclass
@@ -396,11 +397,14 @@ class AutoFixtureBase(object):
         value = generator()
         return value
 
-    def process_field(self, instance, field):
+    def process_field(self, instance, field, is_m2m=False):
         value = self.get_value(field)
         if value is self.IGNORE_FIELD:
             return
-        setattr(instance, field.name, value)
+        if is_m2m and VERSION[0] >= 2:
+            getattr(instance, field.name).set(value)
+        else:
+            setattr(instance, field.name, value)
 
     def process_m2m(self, instance, field):
         # check django's version number to determine how intermediary models
@@ -410,7 +414,7 @@ class AutoFixtureBase(object):
         auto_created_through_model = through._meta.auto_created
 
         if auto_created_through_model:
-            return self.process_field(instance, field)
+            return self.process_field(instance, field, is_m2m=True)
         # if m2m relation has intermediary model:
         #   * only generate relation if 'generate_m2m' is given
         #   * first generate intermediary model and assign a newly created
