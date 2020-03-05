@@ -3,3 +3,4 @@ coverage
 django-discover-runner
 Pillow
 tox
+six
